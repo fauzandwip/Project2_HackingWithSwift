@@ -86,6 +86,10 @@ class ViewController: UIViewController {
     @IBAction func buttonTapped(_ sender: UIButton) {
         var title: String
 
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.2, initialSpringVelocity: 5, animations: {
+            sender.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+        })
+        
         tap -= 1
         
         if sender.tag == correctAnswer {
@@ -116,6 +120,9 @@ class ViewController: UIViewController {
         ac.addAction(UIAlertAction(title: "Continue", style: .default, handler: askQuestion))
         present(ac, animated: true)
         
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 5, animations: {
+            sender.transform = CGAffineTransform(scaleX: 1, y: 1)
+        })
     }
     
     func isHighScore(_ score: Int) {
