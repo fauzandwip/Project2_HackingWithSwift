@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import UserNotifications
 
 class ViewController: UIViewController {
     
@@ -59,6 +60,9 @@ class ViewController: UIViewController {
                 print("Failed to load highscore.")
             }
         }
+        
+        register()
+        scheduleWeek()
     }
     
     func saveData() {
@@ -147,5 +151,102 @@ class ViewController: UIViewController {
         button2.isEnabled = true
         button3.isEnabled = true
     }
+}
+
+extension ViewController: UNUserNotificationCenterDelegate {
+    
+    func register() {
+        let center = UNUserNotificationCenter.current()
+        
+        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            if granted {
+                print("Yay!")
+            } else {
+                print("D'oh")
+            }
+        }
+    }
+    
+    func scheduleWeek() {
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        
+        for weekday in 1...7 {
+            schedule(for: weekday)
+        }
+    }
+    
+    func schedule(for weekday: Int) {
+        registerCategories()
+        let center = UNUserNotificationCenter.current()
+        
+        let content = createContent(day: weekday)
+        let dateComponents = setDate(hour: 23, min: 56, weekday: weekday)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        
+        center.add(request)
+    }
+    
+    func createContent(day: Int?) -> UNMutableNotificationContent{
+        let content = UNMutableNotificationContent()
+        content.title = "It's flag time!"
+        content.body = "Day \(day ?? 1). Your favorite game Guess Flags is missing you!"
+        content.categoryIdentifier = "alarm"
+        content.userInfo = ["customData": "It's game time!"]
+        content.sound = .default
+        
+        return content
+    }
+    
+    func setDate(hour: Int?, min: Int?, weekday: Int?) -> DateComponents {
+        var dateComponents = DateComponents()
+        dateComponents.hour = hour
+        dateComponents.minute = min
+        dateComponents.weekday = weekday
+        
+        return dateComponents
+    }
+    
+    func registerCategories() {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        
+        let play = UNNotificationAction(identifier: "play", title: "Yes, let's play!", options: .foreground)
+        let notPlay = UNNotificationAction(identifier: "notPlay", title: "No thank you!", options: .destructive)
+        
+        let category = UNNotificationCategory(identifier: "alarm", actions: [play, notPlay], intentIdentifiers: [])
+        
+        center.setNotificationCategories([category])
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+        
+        if let customData = userInfo["customData"] as? String {
+            print("Custom data received: \(customData)")
+            
+            switch response.actionIdentifier {
+            case UNNotificationDefaultActionIdentifier:
+                showAlert(title: "Welcome Back!", msg: "Your Guess Flags have missed you! Ready to play?")
+            case "play":
+                showAlert(title: "Welcome Back!", msg: "Your Guess Flags have missed you! Ready to play?")
+            case "notPlay":
+                print("Not playing")
+            default:
+                break
+            }
+        }
+        
+        completionHandler()
+    }
+    
+    func showAlert(title: String, msg: String) {
+        let ac = UIAlertController(title: title, message: msg, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "GO!", style: .default))
+        
+        present(ac, animated: true)
+    }
+    
 }
 
