@@ -181,7 +181,7 @@ extension ViewController: UNUserNotificationCenterDelegate {
         let center = UNUserNotificationCenter.current()
         
         let content = createContent(day: weekday)
-        let dateComponents = setDate(hour: 23, min: 56, weekday: weekday)
+        let dateComponents = setDate(hour: 0, min: 17, weekday: weekday)
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
         
@@ -214,8 +214,9 @@ extension ViewController: UNUserNotificationCenterDelegate {
         
         let play = UNNotificationAction(identifier: "play", title: "Yes, let's play!", options: .foreground)
         let notPlay = UNNotificationAction(identifier: "notPlay", title: "No thank you!", options: .destructive)
+        let snooze = UNNotificationAction(identifier: "snooze", title: "Snooze for 5 minutes", options: .authenticationRequired)
         
-        let category = UNNotificationCategory(identifier: "alarm", actions: [play, notPlay], intentIdentifiers: [])
+        let category = UNNotificationCategory(identifier: "alarm", actions: [play, notPlay, snooze], intentIdentifiers: [])
         
         center.setNotificationCategories([category])
     }
@@ -233,6 +234,8 @@ extension ViewController: UNUserNotificationCenterDelegate {
                 showAlert(title: "Welcome Back!", msg: "Your Guess Flags have missed you! Ready to play?")
             case "notPlay":
                 print("Not playing")
+            case "snooze":
+                response.notification.snoozeNotification(hours: 0, minutes: 1, seconds: 0)
             default:
                 break
             }
@@ -250,3 +253,37 @@ extension ViewController: UNUserNotificationCenterDelegate {
     
 }
 
+extension UNNotification {
+    func snoozeNotification(hours: Int, minutes: Int, seconds: Int) {
+        let center = UNUserNotificationCenter.current()
+        let content = UNMutableNotificationContent()
+        
+        content.title = "It's flag time!"
+        content.body = "We are waiting for you!"
+        content.userInfo = ["customData": "It's game time!"]
+        content.sound = .default
+        
+        let identifier = self.request.identifier
+        
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: Date())
+        let minute = calendar.component(.minute, from: Date())
+        let second = calendar.component(.second, from: Date())
+        
+        var components = DateComponents()
+        components.hour = hour + hours
+        components.minute = minute + minutes
+        components.second = second + seconds
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        
+        center.add(request) { (error) in
+            if let error = error {
+                debugPrint("Rescheduling failed", error.localizedDescription)
+            } else {
+                debugPrint("Rescheduling succeeded")
+            }
+        }
+    }
+}
